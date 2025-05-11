@@ -1,28 +1,67 @@
 # Bağımlılıklar
-node_modules/
-apps/api/node_modules/
-apps/mobile/build/
-apps/mobile/.dart_tool/
-apps/mobile/.flutter-plugins
-apps/mobile/.flutter-plugins-dependencies
-apps/mobile/.packages
-apps/mobile/ios/Pods/
-apps/mobile/ios/Flutter/ephemeral_plugins/
-# Build çıktıları
-dist/
-apps/api/dist/
+/node_modules/
+/apps/api/node_modules/
+/apps/mobile/node_modules/ # Eğer mobil içinde de npm/yarn kullanılırsa
+/packages/*/node_modules/
+
+# Build çıktıları ve önbellekler
+/dist/
+/apps/api/dist/
+/apps/mobile/build/
+/apps/mobile/.dart_tool/
+/apps/mobile/.flutter-plugins
+/apps/mobile/.flutter-plugins-dependencies
+/apps/mobile/.packages
+/packages/*/dist/
+/packages/*/build/
+.turbo/
+.next/ # Eğer Next.js kullanılırsa
+
 # Log dosyaları
 *.log
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
-# IDE ve OS dosyaları
+lerna-debug.log*
+
+# IDE ve OS'e özel dosyalar
 .vscode/
+!.vscode/extensions.json # VSCode eklenti önerilerini paylaşmak isteyebiliriz
+!.vscode/settings.json   # Ortak VSCode ayarlarını paylaşmak isteyebiliriz
 .idea/
 *.DS_Store
-# Environment dosyaları
+Thumbs.db
+
+# Environment dosyaları (Hassas bilgiler içerebilir)
 .env
+.env.*
+!.env.example # Örnek .env dosyalarını paylaşabiliriz
 apps/api/.env
 apps/mobile/.env
-# Turbo cache
-.turbo/
+packages/*/.env
+
+# Flutter'a özel dosyalar
+apps/mobile/ios/Pods/
+apps/mobile/ios/Flutter/ephemeral_plugins/
+apps/mobile/ios/Flutter/DerivedData/
+apps/mobile/ios/.symlinks/
+apps/mobile/ios/Runner.xcworkspace/xcshareddata/
+apps/mobile/ios/Runner.xcodeproj/project.xcworkspace/xcshareddata/
+apps/mobile/ios/Runner.xcodeproj/xcuserdata/
+apps/mobile/android/.gradle/
+apps/mobile/android/captures/
+apps/mobile/android/*.keystore
+apps/mobile/android/key.properties
+
+# Coverage raporları
+coverage/
+apps/api/coverage/
+apps/mobile/coverage/
+packages/*/coverage/
+
+# Diğer
+npm-shrinkwrap.json
+package-lock.json # Eğer pnpm veya yarn lock dosyası kullanılıyorsa, bunu eklemeyin. npm için genellikle eklenir ama workspace'lerde bazen sorun çıkarabilir. Şimdilik ekleyelim, sorun olursa kaldırırız.
+                  # Ana dizindeki package-lock.json kalsın, alt paketlerinkini ignore edebiliriz:
+apps/*/package-lock.json
+packages/*/package-lock.json

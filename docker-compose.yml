@@ -1,0 +1,17 @@
+version: '3.8'
+services:
+  postgres_voyas:
+    image: postgis/postgis:16-3.4 # PostGIS'li PostgreSQL imajı
+    container_name: voyas_db_local
+    environment:
+      POSTGRES_USER: voyas_user
+      POSTGRES_PASSWORD: StrongPassword123!
+      POSTGRES_DB: voyas_dev_db
+    ports:
+      - "5433:5432" # Bilgisayarımızın 5433 portunu kutunun 5432 portuna bağlıyoruz
+    volumes:
+      - voyas_postgres_data:/var/lib/postgresql/data # Veriler kaybolmasın diye
+    restart: unless-stopped
+
+volumes:
+  voyas_postgres_data:
