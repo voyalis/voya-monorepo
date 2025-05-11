@@ -155,3 +155,28 @@ GELİŞİM LOGU GÜNCELLEMESİ:
   .gitignore dosyasının projenin en başından itibaren doğru yapılandırılmasının önemi vurgulandı.
   Ana package-lock.json dosyasının Git'e dahil edilmesi, ancak alt paketlerdeki (apps/*/package-lock.json) lock dosyalarının .gitignore ile hariç tutulması düşünülebilir (npm workspaces davranışı ve tutarlılık için bu konu ileride tekrar değerlendirilebilir, şimdilik ana lock dosyası yeterli).
   Sonuç: Git depomuz artık daha temiz ve sadece gerekli kod/konfigürasyon dosyalarını içeriyor. node_modules gibi büyük ve gereksiz klasörler depoya gönderilmeyecek.
+
+  GELİŞİM LOGU GÜNCELLEMESİ:
+
+Tarih: 11 Mayıs 2025 (Devam)
+
+Adım 6: Mobil (Flutter) Uygulama Kabuğu Entegrasyonu
+
+Yapılanlar:
+voya-monorepo/apps/ altına mobile adında bir klasör oluşturuldu.
+apps/mobile klasörü içine flutter create . --project-name=mobile --org=com.voyas komutuyla standart bir Flutter uygulama iskeleti kuruldu.
+Mobil uygulamanın Turborepo tarafından tanınması ve yönetilebilmesi için apps/mobile/package.json dosyası oluşturuldu ve içine @voya/mobile adı ile temel build, test, lint, clean ve dev (flutter run) script'leri eklendi.
+Ana voya-monorepo/package.json dosyasına, Turborepo aracılığıyla mobil uygulamaya ait script'leri çalıştırmak için kısayollar (build:mobile, start:dev:mobile vb.) eklendi.
+Kararlar/Notlar:
+Flutter projesi, monorepo içinde kendi package.json dosyasıyla bir workspace paketi olarak tanımlandı.
+Mobil uygulama için start:dev script'i, flutter run komutunu çalıştıracak şekilde ayarlandı.
+Sonuç: Monorepo içinde hem backend API'miz hem de mobil Flutter uygulamamız için temel iskeletler ve Turborepo ile yönetim altyapısı oluşturuldu.
+Adım 7: Son Değişikliklerin GitHub'a Gönderilmesi
+
+Yapılanlar:
+Mobil uygulama eklenmesi ve ilgili Turborepo yapılandırmalarını içeren tüm değişiklikler Git'e eklendi.
+feat(mobile): Add Flutter mobile app shell and integrate with Turborepo mesajıyla yeni bir commit oluşturuldu.
+Değişiklikler başarıyla GitHub'daki voya-monorepo deposuna push edildi.
+Sonuç: Projenin en güncel hali, mobil uygulama iskeletiyle birlikte GitHub'da bulunmaktadır.
+Harika! Artık hem API'miz hem de Mobil uygulamamız için temel iskeletler monorepo'muzda ve Turborepo ile yönetilmeye hazır.
+
