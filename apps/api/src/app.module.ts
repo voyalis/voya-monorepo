@@ -1,30 +1,31 @@
+// voya-monorepo/apps/api/src/app.module.ts
 import { Module } from '@nestjs/common';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { ConfigModule, ConfigService } from '@nestjs/config';
+// ConfigModule ve ConfigService importlarını ŞİMDİLİK YORUMLAYIN veya SİLİN
+// import { ConfigModule, ConfigService } from '@nestjs/config';
+import { Message } from './messages/message.entity'; // Message entity'sini direkt import ediyoruz
+
+// MessagesModule importunu da ŞİMDİLİK YORUMLAYIN veya SİLİN
+// import { MessagesModule } from './messages/messages.module';
 
 @Module({
   imports: [
-    ConfigModule.forRoot({
-      isGlobal: true,
-      envFilePath: '.env',
+    // ConfigModule.forRoot(...), // BU KISMI ŞİMDİLİK YORUMLAYIN veya SİLİN
+    TypeOrmModule.forRoot({
+      // forRootAsync yerine direkt forRoot kullanıyoruz
+      type: 'postgres',
+      host: 'localhost', // Bilgileri doğrudan yazıyoruz
+      port: 5433,
+      username: 'voyas_user',
+      password: 'StrongPassword123!',
+      database: 'voyas_dev_db',
+      entities: [Message], // Glob deseni yerine direkt entity sınıfını verdik
+      synchronize: true,
+      logging: true,
     }),
-    TypeOrmModule.forRootAsync({
-      imports: [ConfigModule],
-      inject: [ConfigService],
-      useFactory: (configService: ConfigService) => ({
-        type: 'postgres',
-        host: configService.get<string>('DATABASE_HOST'),
-        port: parseInt(configService.get<string>('DATABASE_PORT') || '5432'),
-        username: configService.get<string>('DATABASE_USER'),
-        password: configService.get<string>('DATABASE_PASSWORD'),
-        database: configService.get<string>('DATABASE_DB_NAME'),
-        entities: [__dirname + '/../**/*.entity{.ts,.js}'], // Bu satır önemli, entity'leri bulması için
-        synchronize: true, // Geliştirme için true, ÜRETİMDE FALSE OLMALI!
-        logging: true, // SQL sorgularını konsolda gösterir
-      }),
-    }),
+    // MessagesModule, // BU SATIRI DA ŞİMDİLİK YORUMLAYIN veya SİLİN
   ],
   controllers: [AppController],
   providers: [AppService],

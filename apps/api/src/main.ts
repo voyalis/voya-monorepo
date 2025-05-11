@@ -1,3 +1,4 @@
+import 'reflect-metadata'; // BU SATIR EN ÜSTTE OLMALI
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 

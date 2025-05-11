@@ -11,31 +11,23 @@ const common_1 = require("@nestjs/common");
 const app_controller_1 = require("./app.controller");
 const app_service_1 = require("./app.service");
 const typeorm_1 = require("@nestjs/typeorm");
-const config_1 = require("@nestjs/config");
+const message_entity_1 = require("./messages/message.entity");
 let AppModule = class AppModule {
 };
 exports.AppModule = AppModule;
 exports.AppModule = AppModule = __decorate([
     (0, common_1.Module)({
         imports: [
-            config_1.ConfigModule.forRoot({
-                isGlobal: true,
-                envFilePath: '.env',
-            }),
-            typeorm_1.TypeOrmModule.forRootAsync({
-                imports: [config_1.ConfigModule],
-                inject: [config_1.ConfigService],
-                useFactory: (configService) => ({
-                    type: 'postgres',
-                    host: configService.get('DATABASE_HOST'),
-                    port: parseInt(configService.get('DATABASE_PORT') || '5432'),
-                    username: configService.get('DATABASE_USER'),
-                    password: configService.get('DATABASE_PASSWORD'),
-                    database: configService.get('DATABASE_DB_NAME'),
-                    entities: [__dirname + '/../**/*.entity{.ts,.js}'],
-                    synchronize: true,
-                    logging: true,
-                }),
+            typeorm_1.TypeOrmModule.forRoot({
+                type: 'postgres',
+                host: 'localhost',
+                port: 5433,
+                username: 'voyas_user',
+                password: 'StrongPassword123!',
+                database: 'voyas_dev_db',
+                entities: [message_entity_1.Message],
+                synchronize: true,
+                logging: true,
             }),
         ],
         controllers: [app_controller_1.AppController],
