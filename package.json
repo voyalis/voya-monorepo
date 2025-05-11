@@ -10,8 +10,12 @@
     "start:dev:api": "turbo run start:dev --filter=@voya/api...",
     "lint:api": "turbo run lint --filter=@voya/api",
     "test:api": "turbo run test --filter=@voya/api",
-    "test": "echo \"Error: no test specified\" && exit 1"
-    
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build:mobile": "turbo run build --filter=@voya/mobile",
+    "start:dev:mobile": "turbo run dev --filter=@voya/mobile",
+    "lint:mobile": "turbo run lint --filter=@voya/mobile",
+    "test:mobile": "turbo run test --filter=@voya/mobile",
+    "clean:mobile": "turbo run clean --filter=@voya/mobile"
   },
   "keywords": [],
   "author": "",
@@ -22,12 +26,11 @@
     "packages/*"
   ],
   "devDependencies": {
-    
-    "@nestjs/cli": "^10.3.2", 
+    "@nestjs/cli": "^10.3.2",
     "@nestjs/schematics": "^10.1.1",
     "ts-node": "^10.9.2",
     "tsconfig-paths": "^4.2.0",
     "typescript": "~5.4.0",
-    "turbo": "^2.5.3" 
+    "turbo": "^2.5.3"
   }
 }

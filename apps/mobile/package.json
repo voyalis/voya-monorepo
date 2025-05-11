@@ -1,0 +1,12 @@
+{
+  "name": "@voya/mobile",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "build": "flutter build apk --debug",
+    "test": "flutter test",
+    "lint": "flutter analyze",
+    "clean": "flutter clean",
+    "dev": "flutter run"
+  }
+}

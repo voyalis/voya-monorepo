@@ -139,3 +139,19 @@ Geliştirme kolaylığı için synchronize: true ayarı yapıldı, üretimde fal
 Sonuç: API'miz artık lokalde çalışan PostgreSQL veritabanımıza başarıyla bağlanabiliyor.
 
 
+GELİŞİM LOGU GÜNCELLEMESİ:
+
+  Tarih: 11 Mayıs 2025 (Devam)
+
+  Adım 5: .gitignore Yapılandırması ve Depo Temizliği
+
+  Yapılanlar:
+  Kapsamlı bir .gitignore dosyası voya-monorepo ana dizinine eklendi. Bu dosya node_modules, build çıktıları, loglar, environment dosyaları ve IDE/OS'e özel dosyaları içerecek şekilde yapılandırıldı.
+  Daha önceki push'larda yanlışlıkla depoya eklenmiş olabilecek node_modules klasörleri (ana dizin ve apps/api için) git rm -r --cached <klasör_adı> komutları kullanılarak Git takibinden çıkarıldı. Bu işlem lokaldeki dosyaları silmedi, sadece Git'in artık bu klasörleri izlememesini sağladı.
+  .gitignore dosyası ve yapılan temizlik işlemleri yeni bir commit ile Git'e eklendi.
+  Tüm değişiklikler başarıyla GitHub'daki voya-monorepo deposuna push edildi. GitHub'dan gelen "büyük dosya" uyarısının node_modules kaynaklı olduğu ve .gitignore ile bu sorunun gelecekte yaşanmayacağı anlaşıldı.
+  Kararlar/Notlar:
+  node_modules klasörlerinin kesinlikle Git'e gönderilmemesi gerektiği bir kez daha teyit edildi.
+  .gitignore dosyasının projenin en başından itibaren doğru yapılandırılmasının önemi vurgulandı.
+  Ana package-lock.json dosyasının Git'e dahil edilmesi, ancak alt paketlerdeki (apps/*/package-lock.json) lock dosyalarının .gitignore ile hariç tutulması düşünülebilir (npm workspaces davranışı ve tutarlılık için bu konu ileride tekrar değerlendirilebilir, şimdilik ana lock dosyası yeterli).
+  Sonuç: Git depomuz artık daha temiz ve sadece gerekli kod/konfigürasyon dosyalarını içeriyor. node_modules gibi büyük ve gereksiz klasörler depoya gönderilmeyecek.
