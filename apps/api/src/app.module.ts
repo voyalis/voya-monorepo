@@ -1,31 +1,37 @@
-// voya-monorepo/apps/api/src/app.module.ts
 import { Module } from '@nestjs/common';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { TypeOrmModule } from '@nestjs/typeorm';
-// ConfigModule ve ConfigService importlarını ŞİMDİLİK YORUMLAYIN veya SİLİN
-// import { ConfigModule, ConfigService } from '@nestjs/config';
-import { Message } from './messages/message.entity'; // Message entity'sini direkt import ediyoruz
+import { ConfigModule, ConfigService } from '@nestjs/config'; // Tekrar aktif ettik
+import { Message } from './messages/message.entity'; // Message entity'miz
 
-// MessagesModule importunu da ŞİMDİLİK YORUMLAYIN veya SİLİN
+// MessagesModule'ü hala yorumlu/silinmiş tutuyoruz
 // import { MessagesModule } from './messages/messages.module';
 
 @Module({
   imports: [
-    // ConfigModule.forRoot(...), // BU KISMI ŞİMDİLİK YORUMLAYIN veya SİLİN
-    TypeOrmModule.forRoot({
-      // forRootAsync yerine direkt forRoot kullanıyoruz
-      type: 'postgres',
-      host: 'localhost', // Bilgileri doğrudan yazıyoruz
-      port: 5433,
-      username: 'voyas_user',
-      password: 'StrongPassword123!',
-      database: 'voyas_dev_db',
-      entities: [Message], // Glob deseni yerine direkt entity sınıfını verdik
-      synchronize: true,
-      logging: true,
+    ConfigModule.forRoot({
+      // Tekrar aktif ettik
+      isGlobal: true,
+      envFilePath: '.env',
     }),
-    // MessagesModule, // BU SATIRI DA ŞİMDİLİK YORUMLAYIN veya SİLİN
+    TypeOrmModule.forRootAsync({
+      // forRootAsync'e geri döndük
+      imports: [ConfigModule],
+      inject: [ConfigService],
+      useFactory: (configService: ConfigService) => ({
+        type: 'postgres',
+        host: configService.get<string>('DATABASE_HOST'),
+        port: parseInt(configService.get<string>('DATABASE_PORT') || '5433'),
+        username: configService.get<string>('DATABASE_USER'),
+        password: configService.get<string>('DATABASE_PASSWORD'),
+        database: configService.get<string>('DATABASE_DB_NAME'),
+        entities: [Message], // DİKKAT: Burası direkt [Message] olarak kalacak! Glob deseni yok.
+        synchronize: true,
+        logging: true,
+      }),
+    }),
+    // MessagesModule,
   ],
   controllers: [AppController],
   providers: [AppService],
