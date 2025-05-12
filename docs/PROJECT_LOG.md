@@ -238,3 +238,21 @@ CI pipeline'ı push (main, develop, feature/* vb.) ve pull_request (main, develo
 Mobil build için Android SDK'sının CI runner'ında ayrıca kurulması gerektiği anlaşıldı ve çözüldü.
 nrwl/nx-set-shas kullanımı, Turborepo'nun affected mantığının CI'da da verimli çalışmasını sağlayacaktır.
 Sonuç: Temel CI pipeline'ımız artık hem backend API hem de mobil uygulama için lint, test ve build işlemlerini başarıyla otomatik olarak gerçekleştiriyor. Mobil APK build'i de sorunsuz çalışıyor ve artifact olarak erişilebilir durumda.
+
+GELİŞİM LOGU GÜNCELLEMESİ:
+
+Tarih: 12 Mayıs 2025 (Devam)
+
+Adım 9 (Devam): CI/CD Pipeline'ının Tamamlanması ve API'nin Fly.io'ya Deploy Edilmesi
+
+Yapılanlar:
+apps/api/Dockerfile güncellenerek geçerli bir taban imaj (node:current-alpine) kullanıldı ve build yolu düzeltildi.
+GitHub Actions workflow (ci.yml) dosyasına permissions: { contents: read, packages: write } eklenerek GITHUB_TOKEN'a GHCR'a yazma izni verildi.
+build-and-push-api-image job'ı, API Docker imajını başarıyla build edip GHCR'a (ghcr.io/voyalis/voya-api) push etti.
+deploy-api-to-fly job'ı, GHCR'daki bu imajı kullanarak API'yi Fly.io'daki voya-api-test uygulamasına başarıyla deploy etti.
+Tüm CI job'ları (api-ci, mobile-ci, build-and-push-api-image, deploy-api-to-fly) başarıyla tamamlandı.
+Kararlar/Notlar:
+Dockerfile'da doğru taban imajının ve build çıktı yollarının kullanılması kritikti.
+GHCR'a push için GITHUB_TOKEN'a packages: write izninin verilmesi gerekti.
+Fly.io deploy'u için fly.toml ve FLY_API_TOKEN doğru şekilde yapılandırıldı.
+Sonuç: VoyaGo++ API'si için tam bir CI/CD pipeline'ı (lint, test, build, imaj oluşturma, GHCR'a push, Fly.io'ya deploy) başarıyla kuruldu. API'nin test ortamı artık otomatik olarak güncelleniyor. Mobil uygulama için de CI (lint, test, APK build) akışı çalışıyor.

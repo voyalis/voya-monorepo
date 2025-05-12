@@ -1,33 +1,45 @@
-// voya-monorepo/apps/api/src/app.module.ts
 import { Module } from '@nestjs/common';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { ConfigModule, ConfigService } from '@nestjs/config';
-import { Message } from './messages/message.entity';
-import { MessagesModule } from './messages/messages.module';
+import { ConfigModule, ConfigService } from '@nestjs/config'; // Ortam değişkenleri için
+import { Message } from './messages/message.entity'; // Oluşturduğumuz Mesaj tablosu
+import { MessagesModule } from './messages/messages.module'; // Mesajlar için modülümüz
 
 @Module({
   imports: [
     ConfigModule.forRoot({
-      isGlobal: true,
-      // .env dosyasını hala lokal geliştirme için kullanabiliriz,
-      // ama Fly.io'da ortam değişkenleri öncelikli olacaktır.
-      envFilePath: '.env',
-      ignoreEnvFile: process.env.NODE_ENV === 'production', // Üretimde .env dosyasını yok sayabiliriz
+      isGlobal: true, // ConfigModule'ü tüm modüllerde kullanılabilir yap
+      envFilePath: '.env', // Lokal geliştirme için .env dosyasını oku
+      // Fly.io'da NODE_ENV=production olduğunda bu dosya okunmayacak,
+      // bunun yerine Fly.io'ya set ettiğimiz ortam değişkenleri (secret'lar) kullanılacak.
+      ignoreEnvFile: process.env.NODE_ENV === 'production',
     }),
     TypeOrmModule.forRootAsync({
-      imports: [ConfigModule],
-      inject: [ConfigService],
+      imports: [ConfigModule], // ConfigService'i burada kullanabilmek için
+      inject: [ConfigService], // ConfigService'i useFactory içine enjekte et
       useFactory: (configService: ConfigService) => {
-        const dbUrl = configService.get<string>('DATABASE_URL'); // Fly.io secret'ından gelecek
-        if (!dbUrl) {
-          // Lokal geliştirme için .env'den eski parametreleri kullan (opsiyonel fallback)
-          // Veya burada bir hata fırlatabilirsiniz eğer DATABASE_URL yoksa.
-          // Şimdilik, eğer DATABASE_URL yoksa lokal .env'ye güvensin diyeceğiz,
-          // ama Fly.io'da DATABASE_URL kesinlikle set edilmiş olmalı.
+        const dbUrl = configService.get<string>('DATABASE_URL'); // Fly.io SECRET'INDAN GELEN DEĞER
+
+        if (dbUrl) {
+          // Eğer DATABASE_URL varsa (Fly.io ortamında olacak)
+          console.log(
+            'Connecting to database using DATABASE_URL from environment...',
+          );
+          return {
+            type: 'postgres',
+            url: dbUrl, // Neon bağlantı dizesini doğrudan kullan
+            entities: [Message], // Hangi tablolarla çalışacağımızı belirtiyoruz
+            synchronize: process.env.NODE_ENV !== 'production', // DİKKAT: Sadece dev/test'te true, ÜRETİMDE KESİNLİKLE FALSE!
+            logging: true, // SQL sorgularını konsolda gösterir (geliştirme/debug için faydalı)
+            ssl: dbUrl.includes('sslmode=require')
+              ? { rejectUnauthorized: false }
+              : false, // Neon için SSL ayarı
+          };
+        } else {
+          // Eğer DATABASE_URL yoksa (lokal geliştirme ortamı gibi), .env dosyasındaki bireysel parametreleri kullan
           console.warn(
-            'DATABASE_URL not found, attempting to use individual DB params from .env for local dev',
+            'DATABASE_URL not found, using individual DB parameters from .env for local development...',
           );
           return {
             type: 'postgres',
@@ -39,31 +51,16 @@ import { MessagesModule } from './messages/messages.module';
             password: configService.get<string>('DATABASE_PASSWORD'),
             database: configService.get<string>('DATABASE_DB_NAME'),
             entities: [Message],
-            synchronize: true, // GELİŞTİRME İÇİN true, ÜRETİMDE KESİNLİKLE FALSE!
+            synchronize: true, // Lokal geliştirme için true olabilir
             logging: true,
-            ssl: false, // Lokal için ssl false olabilir
+            ssl: false, // Lokal PostgreSQL genellikle SSL kullanmaz
           };
         }
-
-        // Neon (veya çoğu bulut veritabanı) SSL gerektirir.
-        // Bağlantı dizesinde ?sslmode=require varsa TypeORM bunu anlar.
-        // Ekstra SSL ayarları gerekebilir:
-        return {
-          type: 'postgres',
-          url: dbUrl, // Neon bağlantı dizesini doğrudan kullan
-          entities: [Message],
-          synchronize: true, // GELİŞTİRME/TEST İÇİN true, ÜRETİMDE KESİNLİKLE FALSE!
-          logging: true,
-          ssl: dbUrl.includes('sslmode=require')
-            ? { rejectUnauthorized: false }
-            : false, // Basit bir SSL ayarı, Neon için gerekebilir.
-          // Daha güvenli SSL için sertifika ayarları gerekebilir.
-        };
       },
     }),
-    MessagesModule,
+    MessagesModule, // Mesajlarla ilgili modülümüzü uygulamaya dahil ediyoruz
   ],
-  controllers: [AppController],
-  providers: [AppService],
+  controllers: [AppController], // Ana controller (varsayılan "Hello World!")
+  providers: [AppService], // Ana servis (varsayılan "Hello World!")
 })
 export class AppModule {}
