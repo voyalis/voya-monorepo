@@ -1,64 +1,117 @@
-name: VoyaMonorepo CI
+name: VoyaMonorepo CI/CD
 
 on:
-  push: # Hangi dallara push yapıldığında çalışsın?
+  push:
     branches:
       - main
       - develop
-      - 'feature/**' # Tüm feature dalları
-      - 'release/**' # Tüm release dalları
-      - 'hotfix/**'  # Tüm hotfix dalları
-  pull_request: # Hangi dallara PR açıldığında çalışsın?
+      - 'feature/**'
+      - 'release/**'
+      - 'hotfix/**'
+  pull_request:
     branches:
       - main
       - develop
       - 'release/**'
 
 jobs:
-  lint-test-build:
-    name: Lint, Test & Build
-    runs-on: ubuntu-latest # GitHub'ın sağladığı sanal Ubuntu makinesinde çalışacak
-
+  lint-test-build-common:
+    name: Lint, Test & Build Common (API + Mobile)
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout Code
-        uses: actions/checkout@v4 # Kodumuzu sanal makineye çeker
-        with:
-          fetch-depth: 0 # Turborepo'nun 'affected' komutları için tüm geçmişi alır
+        uses: actions/checkout@v4
+        # fetch-depth: 0 # Turbo genellikle tüm geçmişe ihtiyaç duymaz, gerekirse eklenir.
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20.x' # CI için stabil ve Nx'in desteklediği bir LTS versiyonu seçelim
-          cache: 'npm' # npm bağımlılıklarını cache'ler
+          node-version: '20.x'
+          cache: 'npm'
 
       - name: Install Root Dependencies
-        run: npm ci # package-lock.json'a göre temiz kurulum yapar
+        run: npm ci
 
-      # Turborepo'nun 'affected' komutları için base ref'i belirle
-      # PR için: ${{ github.event.pull_request.base.sha }}
-      # Push için (main/develop'e merge sonrası): ${{ github.event.before }}
-      # Diğer push'lar için (feature branch'e push): origin/develop (veya ana entegrasyon dalınız)
-      - name: Derive appropriate SHAs for base and head for `nx affected` commands
-        uses: nrwl/nx-set-shas@v4 # Nx'in kendi action'ı bu işi kolaylaştırır
-        # with:
-          # mainBranchName: 'main' # Eğer ana dalınız 'main' dışında bir şeyse belirtin
+      - name: Lint All Projects
+        run: npx turbo run lint # Tüm workspace'deki lint script'lerini çalıştırır
 
-      - name: Lint Affected Projects
-        run: npx turbo run lint --filter='[${{ env.NX_BASE }}...${{ env.NX_HEAD }}]'
+      - name: Test API
+        run: npm run test:api # Ana package.json'daki turbo script'ini kullanır (filter @voya/api içerir)
+                               # veya npx turbo run test --filter=@voya/api -- --passWithNoTests
 
-      - name: Test Affected Projects
-        run: npx turbo run test --filter='[${{ env.NX_BASE }}...${{ env.NX_HEAD }}]' -- --passWithNoTests # Eğer etkilenen projede test yoksa hata verme
+      - name: Test Mobile
+        run: npm run test:mobile # Ana package.json'daki turbo script'ini kullanır (filter @voya/mobile içerir)
+                                 # veya npx turbo run test --filter=@voya/mobile -- --passWithNoTests
 
-      - name: Build Affected Projects
-        run: npx turbo run build --filter='[${{ env.NX_BASE }}...${{ env.NX_HEAD }}]'
+      - name: Build API
+        run: npm run build:api # Ana package.json'daki turbo script'ini kullanır (filter @voya/api içerir)
+                               # veya npx turbo run build --filter=@voya/api
 
-  # Mobil Build için ayrı bir job (özellikle iOS için macOS runner gerekebilir)
-  # Şimdilik Android build'ini aynı Linux runner'da deneyelim.
-  # Flutter kurulumu bu job içinde ayrıca yapılmalı.
+  build-and-push-api-image:
+        name: Build and Push API Docker Image
+        runs-on: ubuntu-latest
+        needs: lint-test-build-common
+        if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop')
+
+        steps:
+          - name: Checkout Code
+            uses: actions/checkout@v4
+
+          - name: Set up QEMU
+            uses: docker/setup-qemu-action@v3
+
+          - name: Set up Docker Buildx
+            uses: docker/setup-buildx-action@v3
+
+          - name: Login to GitHub Container Registry
+            uses: docker/login-action@v3
+            with:
+              registry: ghcr.io
+              username: ${{ github.repository_owner }}
+              password: ${{ secrets.GITHUB_TOKEN }}
+
+          - name: Build and Push API Image
+            id: docker_build_api
+            uses: docker/build-push-action@v5
+            with:
+              context: .
+              file: ./apps/api/Dockerfile
+              push: true
+              tags: |
+                ghcr.io/${{ github.repository_owner }}/voya-api:${{ github.sha }}
+                ghcr.io/${{ github.repository_owner }}/voya-api:${{ github.ref_name }}
+              labels: |
+                org.opencontainers.image.source=${{ github.repositoryUrl }}
+                org.opencontainers.image.revision=${{ github.sha }}
+              cache-from: type=gha
+              cache-to: type=gha,mode=max
+
+          - name: Image Digest
+            run: echo "API Image digest ${{ steps.docker_build_api.outputs.digest }}"
+  deploy-api-to-fly:
+    name: Deploy API to Fly.io
+    runs-on: ubuntu-latest
+    needs: build-and-push-api-image # İmaj push edildikten sonra çalışsın
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop')
+    # environment: voya-api-test-fly-io # Eğer GitHub Environment tanımladıysanız
+
+    steps:
+      - name: Checkout Code # fly.toml için gerekli
+        uses: actions/checkout@v4
+
+      - name: Setup Flyctl
+        uses: superfly/flyctl-actions/setup-flyctl@master
+
+      - name: Deploy to Fly.io
+        run: flyctl deploy --config ./fly.toml --app voya-api-test --image ghcr.io/${{ github.repository_owner }}/voya-api:${{ github.sha }} --remote-only --detach --ha=false
+        env:
+          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+
   build-mobile-apk:
     name: Build Mobile APK (Android)
     runs-on: ubuntu-latest
-    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop') # Sadece main ve develop'a push'ta çalışsın
+    needs: lint-test-build-common
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop')
 
     steps:
       - name: Checkout Code
@@ -68,56 +121,31 @@ jobs:
         uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
-          java-version: '17' # Flutter Android build için genellikle Java 11 veya üzeri gerekir
+          java-version: '17'
 
       - name: Setup Flutter
-        uses: subosito/flutter-action@v2 # Flutter SDK'sını kurar
+        uses: subosito/flutter-action@v2
         with:
-          channel: 'stable' # Veya projenizin kullandığı Flutter kanalı
-          cache: true # Flutter bağımlılıklarını cache'ler
+          channel: 'stable'
+          cache: true
 
-        # YENİ EKLENEN ADIMLAR: Android SDK Kurulumu ve Lisans Kabulü
       - name: Setup Android SDK
-        uses: android-actions/setup-android@v3 # Veya v2, en güncel olanı kontrol edin
-          # with:
-            # sdk-version: '34' # İsteğe bağlı, belirli bir SDK versiyonu
-            # build-tools-version: '34.0.0' # İsteğe bağlı
-            # ndk-version: '25.2.9519653' # İsteğe bağlı
-            # cmake-version: '3.22.1' # İsteğe bağlı
+        uses: android-actions/setup-android@v3
 
-        # Alternatif olarak, komut satırı araçlarıyla SDK bileşenlerini yükleme
-        # Bu adım android-actions/setup-android ile çakışabilir, birini seçin.
-        # - name: Install Android SDK Command Line Tools & Accept Licenses
-        #   run: |
-        #     # Android SDK Command Line Tools'u indir ve kur (varsa yolu güncelle)
-        #     # wget https://dl.google.com/android/repository/commandlinetools-linux-XXXXXXX_latest.zip -O cmdline-tools.zip
-        #     # mkdir -p $ANDROID_SDK_ROOT/cmdline-tools
-        #     # unzip cmdline-tools.zip -d $ANDROID_SDK_ROOT/cmdline-tools/temp
-        #     # mv $ANDROID_SDK_ROOT/cmdline-tools/temp/cmdline-tools $ANDROID_SDK_ROOT/cmdline-tools/latest
-        #     # rm cmdline-tools.zip
-        #     # rm -rf $ANDROID_SDK_ROOT/cmdline-tools/temp
-        #     # export PATH=$PATH:$ANDROID_SDK_ROOT/cmdline-tools/latest/bin:$ANDROID_SDK_ROOT/platform-tools
-        #     # sdkmanager --version # Kurulumu doğrula
-        #     # yes | sdkmanager --licenses # Tüm lisansları kabul et
-        #     # sdkmanager "platform-tools" "platforms;android-34" "build-tools;34.0.0" # Gerekli platform ve build tools'u kur
-        #   env:
-        #     ANDROID_SDK_ROOT: ${{ env.ANDROID_HOME }} # android-actions/setup-android bu değişkeni ayarlar
-
-
-      - name: Install Root Dependencies
-        run: npm ci # Eğer mobil build için ana dizinden bir script tetiklenecekse
+      # Eğer root package.json'da scriptler varsa veya turbo global bağımlılıkları gerekiyorsa:
+      - name: Install Root Dependencies (if needed for mobile build scripts)
+        run: npm ci
 
       - name: Install Mobile Dependencies
         run: cd apps/mobile && flutter pub get
 
       - name: Build Mobile APK (Android Debug)
-        run: npm run build:mobile # Ana package.json'daki script'i kullanır (turbo run build --filter=@voya/mobile)
-        # Veya doğrudan:
-        # run: cd apps/mobile && flutter build apk --debug
+        run: npm run build:mobile # Ana package.json'daki script'i kullanır
 
-      # Opsiyonel: Oluşan APK'yı artifact olarak kaydetmek
       - name: Upload Android APK Artifact
         uses: actions/upload-artifact@v4
         with:
           name: voya-mobile-apk
           path: apps/mobile/build/app/outputs/flutter-apk/app-debug.apk
+          
+          

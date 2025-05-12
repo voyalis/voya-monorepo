@@ -202,3 +202,39 @@ API endpoint'lerinin çalışması için global prefix (api/v1) ve controller pa
 TypeORM synchronize: true ayarı sayesinde messages tablosu veritabanında otomatik olarak oluşturuldu.
 ValidationPipe temel düzeyde çalışıyor (eksik paketler daha önce kurulmuştu).
 Sonuç: VoyaGo++ API'si artık lokal PostgreSQL veritabanına bağlanabiliyor, veri yazabiliyor ve okuyabiliyor. Temel CRUD işlemlerinden Create ve Read başarıyla test edildi.
+
+GELİŞİM LOGU GÜNCELLEMESİ:
+
+Tarih: 12 Mayıs 2025 (Devam)
+
+Adım 8 (Devam): Mobil (Flutter) Uygulamasının Turborepo Entegrasyonunun Test Edilmesi ve Tamamlanması
+
+Yapılanlar (Devamı): 5. turbo.json dosyasına, apps/mobile/package.json içindeki dev script'ini (flutter run) çalıştırabilmek için genel bir dev görev tanımı eklendi ("dev": { "cache": false, "persistent": true }). 6. voya-monorepo ana dizininden npm run start:dev:mobile komutu çalıştırıldı. 7. Turborepo, @voya/mobile paketindeki dev script'ini (yani flutter run) başarıyla tetikledi. 8. Flutter uygulaması, WSL içinde varsayılan hedef olan Linux için derlendi ve başlatıldı. XDG_RUNTIME_DIR ile ilgili bir hata alındı ancak uygulamanın çalışmasını engellemedi. Dart VM servisi ve Flutter DevTools erişilebilir hale geldi.
+Kararlar/Notlar:
+Turborepo, mobil uygulama için de temel görevleri (lint, test, build, run) başarıyla yönetebiliyor.
+XDG_RUNTIME_DIR hatası, WSL'de Linux GUI uygulamalarıyla ilgili genel bir durum olup, Android/iOS/Web hedefleri için bir engel teşkil etmeyebilir. İleride gerekirse incelenecek.
+Sonuç: Hem API hem de Mobil uygulamamız için temel geliştirme ve çalıştırma komutları Turborepo üzerinden yönetilebilir durumda. Monorepo'muzun temel iskeleti ve görev otomasyonu çalışıyor.
+
+Tarih: 12 Mayıs 2025 (Devam)
+
+Adım 9: Temel CI Pipeline'ının (GitHub Actions) Kurulumu ve Mobil Build Sorununun Giderilmesi
+
+Yapılanlar:
+.github/workflows/ci.yml dosyası oluşturuldu.
+lint-test-build adlı bir iş (job) tanımlandı:
+Node.js v20.x kuruldu.
+nrwl/nx-set-shas@v4 ile etkilenen projelerin tespiti için base/head SHA'ları ayarlandı.
+turbo run lint, turbo run test, turbo run build komutları sadece etkilenen projeler için çalıştırıldı. Bu adımlar API için başarıyla tamamlandı.
+build-mobile-apk adlı ayrı bir iş tanımlandı:
+Java ve Flutter SDK'ları kuruldu.
+İlk denemede "No Android SDK found" hatası alındı.
+Düzeltme: Workflow'a android-actions/setup-android@v3 adımı eklenerek GitHub Actions runner'ına tam bir Android SDK ortamı kurulması sağlandı.
+flutter doctor -v adımı teşhis için eklendi.
+Mobil bağımlılıkları kuruldu (flutter pub get).
+npm run build:mobile (yani turbo run build --filter=@voya/mobile, o da flutter build apk --debug'ı çalıştırır) komutu çalıştırıldı.
+Oluşan APK, actions/upload-artifact@v4 ile artifact olarak kaydedildi.
+Kararlar/Notlar:
+CI pipeline'ı push (main, develop, feature/* vb.) ve pull_request (main, develop, release/*) olaylarında tetiklenecek şekilde ayarlandı.
+Mobil build için Android SDK'sının CI runner'ında ayrıca kurulması gerektiği anlaşıldı ve çözüldü.
+nrwl/nx-set-shas kullanımı, Turborepo'nun affected mantığının CI'da da verimli çalışmasını sağlayacaktır.
+Sonuç: Temel CI pipeline'ımız artık hem backend API hem de mobil uygulama için lint, test ve build işlemlerini başarıyla otomatik olarak gerçekleştiriyor. Mobil APK build'i de sorunsuz çalışıyor ve artifact olarak erişilebilir durumda.
