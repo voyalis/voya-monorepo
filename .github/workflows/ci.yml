@@ -13,6 +13,9 @@ on:
       - main
       - develop
       - 'release/**'
+permissions: # YENİ EKLENEN BÖLÜM
+  contents: read
+  packages: write 
 
 jobs:
   api-ci: # Sadece API için lint, test, build
