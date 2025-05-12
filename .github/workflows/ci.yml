@@ -1,0 +1,96 @@
+name: VoyaMonorepo CI
+
+on:
+  push: # Hangi dallara push yapıldığında çalışsın?
+    branches:
+      - main
+      - develop
+      - 'feature/**' # Tüm feature dalları
+      - 'release/**' # Tüm release dalları
+      - 'hotfix/**'  # Tüm hotfix dalları
+  pull_request: # Hangi dallara PR açıldığında çalışsın?
+    branches:
+      - main
+      - develop
+      - 'release/**'
+
+jobs:
+  lint-test-build:
+    name: Lint, Test & Build
+    runs-on: ubuntu-latest # GitHub'ın sağladığı sanal Ubuntu makinesinde çalışacak
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4 # Kodumuzu sanal makineye çeker
+        with:
+          fetch-depth: 0 # Turborepo'nun 'affected' komutları için tüm geçmişi alır
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20.x' # CI için stabil ve Nx'in desteklediği bir LTS versiyonu seçelim
+          cache: 'npm' # npm bağımlılıklarını cache'ler
+
+      - name: Install Root Dependencies
+        run: npm ci # package-lock.json'a göre temiz kurulum yapar
+
+      # Turborepo'nun 'affected' komutları için base ref'i belirle
+      # PR için: ${{ github.event.pull_request.base.sha }}
+      # Push için (main/develop'e merge sonrası): ${{ github.event.before }}
+      # Diğer push'lar için (feature branch'e push): origin/develop (veya ana entegrasyon dalınız)
+      - name: Derive appropriate SHAs for base and head for `nx affected` commands
+        uses: nrwl/nx-set-shas@v4 # Nx'in kendi action'ı bu işi kolaylaştırır
+        # with:
+          # mainBranchName: 'main' # Eğer ana dalınız 'main' dışında bir şeyse belirtin
+
+      - name: Lint Affected Projects
+        run: npx turbo run lint --filter='[${{ env.NX_BASE }}...${{ env.NX_HEAD }}]'
+
+      - name: Test Affected Projects
+        run: npx turbo run test --filter='[${{ env.NX_BASE }}...${{ env.NX_HEAD }}]' -- --passWithNoTests # Eğer etkilenen projede test yoksa hata verme
+
+      - name: Build Affected Projects
+        run: npx turbo run build --filter='[${{ env.NX_BASE }}...${{ env.NX_HEAD }}]'
+
+  # Mobil Build için ayrı bir job (özellikle iOS için macOS runner gerekebilir)
+  # Şimdilik Android build'ini aynı Linux runner'da deneyelim.
+  # Flutter kurulumu bu job içinde ayrıca yapılmalı.
+  build-mobile-apk:
+    name: Build Mobile APK (Android)
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop') # Sadece main ve develop'a push'ta çalışsın
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17' # Flutter Android build için genellikle Java 11 veya üzeri gerekir
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2 # Flutter SDK'sını kurar
+        with:
+          channel: 'stable' # Veya projenizin kullandığı Flutter kanalı
+          cache: true # Flutter bağımlılıklarını cache'ler
+
+      - name: Install Root Dependencies
+        run: npm ci # Eğer mobil build için ana dizinden bir script tetiklenecekse
+
+      - name: Install Mobile Dependencies
+        run: cd apps/mobile && flutter pub get
+
+      - name: Build Mobile APK (Android Debug)
+        run: npm run build:mobile # Ana package.json'daki script'i kullanır (turbo run build --filter=@voya/mobile)
+        # Veya doğrudan:
+        # run: cd apps/mobile && flutter build apk --debug
+
+      # Opsiyonel: Oluşan APK'yı artifact olarak kaydetmek
+      - name: Upload Android APK Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: voya-mobile-apk
+          path: apps/mobile/build/app/outputs/flutter-apk/app-debug.apk
+          
