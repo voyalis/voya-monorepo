@@ -3,25 +3,28 @@ import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Message } from './message.entity';
+import { IsNotEmpty, IsString, MinLength } from 'class-validator'; // Validasyon için
 
-// DTO (Data Transfer Object) - Gelen verinin şeklini tanımlar
 export class CreateMessageDto {
+  @IsString()
+  @IsNotEmpty()
+  @MinLength(1)
   text: string;
 }
 
 @Injectable()
 export class MessagesService {
   constructor(
-    @InjectRepository(Message) // Message Repository'sini enjekte et
+    @InjectRepository(Message)
     private messagesRepository: Repository<Message>,
   ) {}
 
   async create(createMessageDto: CreateMessageDto): Promise<Message> {
-    const newMessage = this.messagesRepository.create(createMessageDto); // Yeni mesaj nesnesi oluştur
-    return this.messagesRepository.save(newMessage); // Veritabanına kaydet
+    const newMessage = this.messagesRepository.create(createMessageDto);
+    return this.messagesRepository.save(newMessage);
   }
 
   async findAll(): Promise<Message[]> {
-    return this.messagesRepository.find(); // Tüm mesajları bul ve döndür
+    return this.messagesRepository.find();
   }
 }

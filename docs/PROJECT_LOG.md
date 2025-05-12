@@ -180,3 +180,25 @@ Değişiklikler başarıyla GitHub'daki voya-monorepo deposuna push edildi.
 Sonuç: Projenin en güncel hali, mobil uygulama iskeletiyle birlikte GitHub'da bulunmaktadır.
 Harika! Artık hem API'miz hem de Mobil uygulamamız için temel iskeletler monorepo'muzda ve Turborepo ile yönetilmeye hazır.
 
+GELİŞİM LOGU GÜNCELLEMESİ:
+
+Tarih: 12 Mayıs 2025
+
+Adım 6.A (Devam): API ile Veritabanına İlk Kayıt ve Okuma İşlemi
+
+Yapılanlar:
+Message entity'si (src/messages/message.entity.ts) oluşturuldu.
+NestJS CLI ile MessagesModule, MessagesService, MessagesController oluşturuldu.
+MessagesModule, TypeOrmModule.forFeature([Message]) ile Message entity'sini import etti.
+MessagesService içine, Message repository'si kullanılarak create(createMessageDto) ve findAll() metodları eklendi. CreateMessageDto tanımlandı.
+MessagesController içine /messages yolu için @Post() (mesaj oluşturma) ve @Get() (mesaj listeleme) endpoint'leri, @UsePipes(new ValidationPipe()) ile birlikte eklendi.
+AppModule, MessagesModule'ü import etti.
+main.ts dosyasına (isteğe bağlı olarak) app.setGlobalPrefix('api/v1'); ve global ValidationPipe eklendi.
+API (npm run start:dev:api ile) yeniden başlatıldı.
+curl veya Postman ile POST /api/v1/messages endpoint'ine JSON data gönderilerek yeni bir mesaj başarıyla oluşturuldu ve veritabanına kaydedildi.
+curl veya Postman ile GET /api/v1/messages endpoint'inden veritabanındaki mesajlar başarıyla listelendi.
+Kararlar/Notlar:
+API endpoint'lerinin çalışması için global prefix (api/v1) ve controller path'i (messages) doğru şekilde birleştirildi.
+TypeORM synchronize: true ayarı sayesinde messages tablosu veritabanında otomatik olarak oluşturuldu.
+ValidationPipe temel düzeyde çalışıyor (eksik paketler daha önce kurulmuştu).
+Sonuç: VoyaGo++ API'si artık lokal PostgreSQL veritabanına bağlanabiliyor, veri yazabiliyor ve okuyabiliyor. Temel CRUD işlemlerinden Create ve Read başarıyla test edildi.

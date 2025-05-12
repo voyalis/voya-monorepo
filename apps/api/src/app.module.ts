@@ -4,9 +4,7 @@ import { AppService } from './app.service';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ConfigModule, ConfigService } from '@nestjs/config'; // Tekrar aktif ettik
 import { Message } from './messages/message.entity'; // Message entity'miz
-
-// MessagesModule'ü hala yorumlu/silinmiş tutuyoruz
-// import { MessagesModule } from './messages/messages.module';
+import { MessagesModule } from './messages/messages.module'; // BU IMPORT OLMALI
 
 @Module({
   imports: [
@@ -31,6 +29,7 @@ import { Message } from './messages/message.entity'; // Message entity'miz
         logging: true,
       }),
     }),
+    MessagesModule,
     // MessagesModule,
   ],
   controllers: [AppController],

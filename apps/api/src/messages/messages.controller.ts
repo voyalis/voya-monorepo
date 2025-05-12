@@ -1,22 +1,32 @@
 // voya-monorepo/apps/api/src/messages/messages.controller.ts
-import { Controller, Get, Post, Body, ValidationPipe } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  ValidationPipe,
+  UsePipes,
+} from '@nestjs/common';
 import { MessagesService, CreateMessageDto } from './messages.service';
 import { Message } from './message.entity';
 
-@Controller('messages') // Bu controller /messages path'i ile eşleşecek
+@Controller('messages')
 export class MessagesController {
   constructor(private readonly messagesService: MessagesService) {}
 
-  @Post() // POST /messages
-  async create(
-    @Body(new ValidationPipe()) createMessageDto: CreateMessageDto,
-  ): Promise<Message> {
-    // @Body() ile request body'sindeki JSON'u alırız
-    // ValidationPipe eklenebilir (class-validator, class-transformer paketleri gerekir)
+  @Post()
+  @UsePipes(
+    new ValidationPipe({
+      transform: true,
+      whitelist: true,
+      forbidNonWhitelisted: true,
+    }),
+  )
+  async create(@Body() createMessageDto: CreateMessageDto): Promise<Message> {
     return this.messagesService.create(createMessageDto);
   }
 
-  @Get() // GET /messages
+  @Get()
   async findAll(): Promise<Message[]> {
     return this.messagesService.findAll();
   }
