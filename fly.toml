@@ -1,17 +1,23 @@
 app = "voya-api-test"
 primary_region = "fra"
 
+# Fly.io'ya Dockerfile'ımızın yerini ve build context'ini söylüyoruz
 [build]
-  dockerfile = "apps/api/Dockerfile"
-  context    = "."
+  dockerfile = "apps/api/Dockerfile" # Dockerfile'ımızın yolu
+  context = "."                     # Monorepo kök dizini context
 
 [env]
   NODE_ENV = "production"
 
 [http_service]
-  internal_port   = 3000
-  force_https     = true
-  auto_stop_machines  = "stop"
+  internal_port = 3000
+  force_https = true
+  auto_stop_machines = "stop"
   auto_start_machines = true
-  min_machines_running = 0
-  processes       = ["app"]
+  min_machines_running = 0 # Ücretsiz katman için 0, test için
+  processes = ["app"]
+
+# [[vm]] # Bu bölümü şimdilik kaldırabilir veya yorumlayabilirsiniz, Fly.io varsayılanları kullanır
+#   memory = '1gb'
+#   cpu_kind = 'shared'
+#   cpus = 1
