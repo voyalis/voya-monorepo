@@ -1,16 +1,9 @@
-# fly.toml app configuration file generated for voya-api-test on 2025-05-12T13:08:01+03:00
-#
-# See https://fly.io/docs/reference/configuration/ for information about how to use this file.
-#
-
+# fly.toml
 app = 'voya-api-test'
 primary_region = 'fra'
 
 [env]
-  NODE_ENV = "production"
-  # DATABASE_URL secret olarak Fly.io platformu tarafından sağlanacak,
-  # bu yüzden buraya eklemiyoruz. Sadece NODE_ENV'i ekliyoruz.
-
+  NODE_ENV = "production" # BU SATIRIN OLMASI ÇOK ÖNEMLİ
 
 [http_service]
   internal_port = 3000
@@ -20,7 +13,7 @@ primary_region = 'fra'
   min_machines_running = 0
   processes = ['app']
 
-[[vm]]
-  memory = '1gb'
-  cpu_kind = 'shared'
-  cpus = 1
+# [[vm]] # Bu bölüm sizde varsa kalsın
+#   memory = '1gb'
+#   cpu_kind = 'shared'
+#   cpus = 1
