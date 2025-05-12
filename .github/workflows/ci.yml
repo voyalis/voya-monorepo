@@ -76,6 +76,34 @@ jobs:
           channel: 'stable' # Veya projenizin kullandığı Flutter kanalı
           cache: true # Flutter bağımlılıklarını cache'ler
 
+        # YENİ EKLENEN ADIMLAR: Android SDK Kurulumu ve Lisans Kabulü
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3 # Veya v2, en güncel olanı kontrol edin
+          # with:
+            # sdk-version: '34' # İsteğe bağlı, belirli bir SDK versiyonu
+            # build-tools-version: '34.0.0' # İsteğe bağlı
+            # ndk-version: '25.2.9519653' # İsteğe bağlı
+            # cmake-version: '3.22.1' # İsteğe bağlı
+
+        # Alternatif olarak, komut satırı araçlarıyla SDK bileşenlerini yükleme
+        # Bu adım android-actions/setup-android ile çakışabilir, birini seçin.
+        # - name: Install Android SDK Command Line Tools & Accept Licenses
+        #   run: |
+        #     # Android SDK Command Line Tools'u indir ve kur (varsa yolu güncelle)
+        #     # wget https://dl.google.com/android/repository/commandlinetools-linux-XXXXXXX_latest.zip -O cmdline-tools.zip
+        #     # mkdir -p $ANDROID_SDK_ROOT/cmdline-tools
+        #     # unzip cmdline-tools.zip -d $ANDROID_SDK_ROOT/cmdline-tools/temp
+        #     # mv $ANDROID_SDK_ROOT/cmdline-tools/temp/cmdline-tools $ANDROID_SDK_ROOT/cmdline-tools/latest
+        #     # rm cmdline-tools.zip
+        #     # rm -rf $ANDROID_SDK_ROOT/cmdline-tools/temp
+        #     # export PATH=$PATH:$ANDROID_SDK_ROOT/cmdline-tools/latest/bin:$ANDROID_SDK_ROOT/platform-tools
+        #     # sdkmanager --version # Kurulumu doğrula
+        #     # yes | sdkmanager --licenses # Tüm lisansları kabul et
+        #     # sdkmanager "platform-tools" "platforms;android-34" "build-tools;34.0.0" # Gerekli platform ve build tools'u kur
+        #   env:
+        #     ANDROID_SDK_ROOT: ${{ env.ANDROID_HOME }} # android-actions/setup-android bu değişkeni ayarlar
+
+
       - name: Install Root Dependencies
         run: npm ci # Eğer mobil build için ana dizinden bir script tetiklenecekse
 
@@ -93,4 +121,3 @@ jobs:
         with:
           name: voya-mobile-apk
           path: apps/mobile/build/app/outputs/flutter-apk/app-debug.apk
-          
