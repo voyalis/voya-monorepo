@@ -208,17 +208,20 @@ jobs:
             # @ işaretinin pozisyonunu bulalım (eğer varsa)
             # 'expr index' bir string içinde başka bir stringin ilk karakterinin pozisyonunu verir.
             # Eğer NEON_DATABASE_URL boşsa veya @ içermiyorsa expr hata verebilir, bu yüzden önce varlığını kontrol edelim.
-            local at_position=0
+            # temp_url_prefix ve at_position değişkenlerini local yapmaya gerek yok, script içinde geçerli olacaklar.
+            at_position=0
             if [[ "${NEON_DATABASE_URL}" == *"@"* ]]; then
               # Geçici bir değişkene atayarak @ işaretine kadar olan kısmı alalım
-              local temp_url_prefix="${NEON_DATABASE_URL%%@*}"
+              temp_url_prefix="${NEON_DATABASE_URL%%@*}"
               # Bu prefix'in uzunluğunu alalım
               at_position=${#temp_url_prefix}
             fi
 
-            local prefix_length=30 # Varsayılan gösterilecek uzunluk
+            prefix_length=30 # Varsayılan gösterilecek uzunluk
             # Eğer @ işareti varsa ve 30 karakterden kısaysa, @'e kadar olan kısmı al
-            if [ "$at_position" -gt 0 ] && [ "$at_position" -lt "$prefix_length" ]; then
+            # Bash'te string olmayan bir değişkene -gt veya -lt uygulamak hataya neden olabilir.
+            # at_position'ın sayı olduğundan emin olalım.
+            if [[ "$at_position" -gt 0 && "$at_position" -lt "$prefix_length" ]]; then
               prefix_length=$((at_position))
             fi
             echo "🔍 NEON_DATABASE_URL prefix (first ~${prefix_length} chars): ${NEON_DATABASE_URL:0:${prefix_length}}..."
