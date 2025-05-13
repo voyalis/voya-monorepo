@@ -171,3 +171,32 @@ jobs:
         run: flyctl deploy --config ./fly.toml --app voya-api-test --image ghcr.io/${{ github.repository_owner }}/voya-api:${{ github.sha }} --remote-only --detach --ha=false
         env:
           FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+
+  run-neon-migrations:
+    name: Run SQL Migrations on Neon DB
+    runs-on: ubuntu-latest
+    needs: deploy-api-to-fly # API başarıyla deploy edildikten sonra çalışsın
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop')
+    env:
+      # Bu secret'ı GitHub deponuzun Actions secret'larına eklemelisiniz.
+      # Değeri: postgresql://neondb_owner:YOUR_NEON_PASSWORD@ep-wispy-lake-a2o8o9o8-pooler.eu-central-1.aws.neon.tech/neondb?sslmode=require
+      NEON_DATABASE_URL: ${{ secrets.NEON_DATABASE_URL_SECRET }}
+      # migrate.sh script'inin psql şifre sormaması için PGPASSWORD'ü de ayarlayabiliriz.
+      # PGPASSWORD: ${{ secrets.NEON_DB_RAW_PASSWORD_SECRET }} # Eğer şifreyi URL'den ayrı tutuyorsanız
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Install PostgreSQL Client (psql)
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y postgresql-client
+
+      - name: Make migrate.sh executable
+        run: chmod +x ./migrate.sh
+
+      - name: Run SQL Migrations on Neon
+        # migrate.sh script'i, NEON_DATABASE_URL ortam değişkeni set edilmişse
+        # onu kullanarak psql komutlarını oluşturacak şekilde tasarlanmıştı.
+        run: ./migrate.sh
