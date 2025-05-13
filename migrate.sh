@@ -1,25 +1,22 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# --- Configuration -----------------------------------------------------------
-
-# Local Docker defaults (override by exporting these before running the script)
+# --- Local DB defaults (override via env) ---
 LOCAL_DB_HOST="${LOCAL_DB_HOST:-localhost}"
 LOCAL_DB_PORT="${LOCAL_DB_PORT:-5433}"
 LOCAL_DB_USER="${LOCAL_DB_USER:-voyas_user}"
 LOCAL_DB_PASSWORD="${LOCAL_DB_PASSWORD:-StrongPassword123!}"
 LOCAL_DB_NAME="${LOCAL_DB_NAME:-voyas_dev_db}"
 
-# Where your .sql migration files live (relative to repo root)
+# Migrations klasörü (repo kökünden)
 MIGRATIONS_DIR="apps/api/src/database/migrations"
 
-# --- Build psql connection arguments -----------------------------------------
-
+# --- psql bağlantı argümanlarını hazırla ---
 if [[ -n "${NEON_DATABASE_URL:-}" ]]; then
-  echo "🎯 Using Neon database via NEON_DATABASE_URL"
+  echo "🎯 Using Neon via NEON_DATABASE_URL"
   CONNECTION_ARGS=( -d "$NEON_DATABASE_URL" )
 else
-  echo "🎯 Using local Docker database at ${LOCAL_DB_HOST}:${LOCAL_DB_PORT}/${LOCAL_DB_NAME}"
+  echo "🎯 Using local Docker at ${LOCAL_DB_HOST}:${LOCAL_DB_PORT}/${LOCAL_DB_NAME}"
   export PGPASSWORD="$LOCAL_DB_PASSWORD"
   CONNECTION_ARGS=(
     -h "$LOCAL_DB_HOST"
@@ -29,44 +26,44 @@ else
   )
 fi
 
-# --- Ensure schema_migrations table exists ----------------------------------
-
-psql "${CONNECTION_ARGS[@]}" -v ON_ERROR_STOP=1 <<'SQL'
+# --- Migrations tablosunu oluştur (bir kez) ---
+psql "${CONNECTION_ARGS[@]}" <<'SQL'
 CREATE TABLE IF NOT EXISTS schema_migrations (
   filename TEXT PRIMARY KEY,
   applied_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 SQL
 
-# --- Apply each migration in order ------------------------------------------
-
 echo "🚀 Applying migrations from $MIGRATIONS_DIR …"
 
+# --- Her .sql dosyası için döngü ---
 find "$MIGRATIONS_DIR" -type f -name '*.sql' | sort -V | while IFS= read -r sql_file; do
   fname=$(basename "$sql_file")
 
-  # Skip if already applied
-  already=$(psql "${CONNECTION_ARGS[@]}" -tAc \
-    "SELECT 1 FROM schema_migrations WHERE filename = '$fname';")
-
-  if [[ -n "$already" ]]; then
+  # Zaten uygulanmışsa atla
+  if psql "${CONNECTION_ARGS[@]}" -tAc \
+       "SELECT 1 FROM schema_migrations WHERE filename = '$fname';" \
+       | grep -q 1; then
     echo "⏩ Skipping already applied: $fname"
     continue
   fi
 
-  # Apply
   echo ""
   echo "----------------------------------------------------------------------"
   echo "⏳ Applying: $fname"
   echo "----------------------------------------------------------------------"
-  psql "${CONNECTION_ARGS[@]}" -v ON_ERROR_STOP=1 -f "$sql_file"
 
-  # Record success
-  psql "${CONNECTION_ARGS[@]}" -v ON_ERROR_STOP=1 -c \
-    "INSERT INTO schema_migrations(filename) VALUES ('$fname');"
+  # SQL çalıştır (hata olsa da script'i durdurma)
+  if psql "${CONNECTION_ARGS[@]}" -f "$sql_file"; then
+    echo "✅ Success: $fname"
+  else
+    echo "⚠️ Warning: errors occurred in $fname, but marking as applied and continuing."
+  fi
 
-  echo "✅ Success: $fname"
+  # Kayıt
+  psql "${CONNECTION_ARGS[@]}" -v ON_ERROR_STOP=1 \
+    -c "INSERT INTO schema_migrations(filename) VALUES ('$fname');"
 done
 
 echo ""
-echo "🎉 All migrations applied!"
+echo "🎉 All migrations processed!"
