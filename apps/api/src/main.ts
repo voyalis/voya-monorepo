@@ -6,10 +6,10 @@ import { ValidationPipe } from '@nestjs/common'; // ValidationPipe için import
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
-  const configService = app.get(ConfigService);
+  const configService = app.get(ConfigService); // ConfigService'i AppModule'den alıyoruz
   const port = configService.get<number>('PORT') || 3000;
 
-  app.setGlobalPrefix('api/v1'); // <-- YENİ EKLENEN SATIR
+  app.setGlobalPrefix('api/v1'); // Global API ön ekimiz
 
   // Global ValidationPipe'ı da burada tanımlayabiliriz,
   // böylece her controller'da @UsePipes dememize gerek kalmaz.
@@ -24,7 +24,11 @@ async function bootstrap() {
     }),
   );
 
-  await app.listen(port);
-  console.log(`Application is running on: ${await app.getUrl()}`);
+  // Uygulamanın tüm arayüzlerden gelen istekleri dinlemesini sağlıyoruz.
+  await app.listen(port, '0.0.0.0'); // <-- '0.0.0.0' EKLENDİ/KONTROL EDİLDİ!
+  console.log(
+    `Application is running on: http://0.0.0.0:${port} (publicly via Fly.io on port 80/443)`,
+  );
+  console.log(`Local access (if forwarded): http://localhost:${port}`);
 }
 bootstrap();
