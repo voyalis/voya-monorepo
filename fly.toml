@@ -1,29 +1,24 @@
-    # fly.toml
-    app = "voya-api-test"
-    primary_region = "fra"
+# fly.toml
+app = "voya-api-test"
+primary_region = "fra"
 
-    [env]
-      NODE_ENV = "production"
+[env]
+  NODE_ENV = "production"
 
-    [http_service]
-      internal_port = 3000
-      force_https = true
-      auto_stop_machines = "stop"
-      auto_start_machines = true
-      min_machines_running = 0 # Ücretsiz katman için 0, test için
-      processes = ["app"]
+[http_service]
+  internal_port = 3000
+  force_https = true
+  auto_stop_machines = "stop"
+  auto_start_machines = true
+  min_machines_running = 0
+  processes = ["app"]
 
-      # Sağlık Kontrolü Ayarları
-      [[http_service.checks]]
-        port = 3000 # Konteyner içindeki port
-        type = "http"
-        interval = "15s" # Ne sıklıkla kontrol edilecek
-        timeout = "5s"   # Ne kadar süre cevap beklenecek
-        grace_period = "30s" # Uygulama başladıktan sonra ilk kontrol için bekleme süresi
-        method = "GET"
-        path = "/api/v1/health" # Global prefix'inizle uyumlu olmalı. Eğer yoksa "/health"
-        protocol = "http" # Konteyner içinde HTTP
-        # tls_skip_verify = false # Eğer HTTPS kullanıyorsanız ve sertifika sorunu varsa
-        [http_service.checks.headers] # Opsiyonel: Özel header'lar
-          # "X-Custom-Header" = "VoyaGoHealthCheck"
-    
+  [[http_service.checks]]
+    port = 3000
+    type = "http"
+    interval = "15s"
+    timeout = "5s"
+    grace_period = "30s" # Uygulama başladıktan sonra ilk kontrol için bekleme süresi
+    method = "GET"
+    path = "/api/v1/health" # Global prefix'inizle uyumlu olmalı
+    protocol = "http"
