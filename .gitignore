@@ -67,3 +67,15 @@ apps/*/package-lock.json
 packages/*/package-lock.json
 
 apps/api/.env
+
+# monorepo kökünde
+**/dist
+**/.turbo
+**/*.tsbuildinfo
+/dist/
+apps/*/dist/
+packages/*/dist/
+/build/
+apps/*/build/
+packages/*/build/
+.turbo/

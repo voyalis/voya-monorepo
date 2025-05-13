@@ -15,7 +15,12 @@
     "start:dev:mobile": "turbo run dev --filter=@voya/mobile",
     "lint:mobile": "turbo run lint --filter=@voya/mobile",
     "test:mobile": "turbo run test --filter=@voya/mobile",
-    "clean:mobile": "turbo run clean --filter=@voya/mobile"
+    "clean:mobile": "turbo run clean --filter=@voya/mobile",
+    "migration:run:api": "turbo run migration:run --filter=@voya/api",
+    "migration:revert:api": "turbo run migration:revert --filter=@voya/api",
+    "migration:show:api": "turbo run migration:show --filter=@voya/api",
+    "migration:generate:api": "turbo run migration:generate --filter=@voya/api --",
+    "migration:create:api": "turbo run migration:create --filter=@voya/api --"
   },
   "keywords": [],
   "author": "",
